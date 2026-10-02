@@ -1,0 +1,1007 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TokenPeek — Free Online JWT Decoder, Debugger & Security Scanner</title>
+<meta name="description" content="Decode any JWT online instantly with TokenPeek's free JWT decoder and debugger. Exploded header/payload/signature view, one-click security audit, expiry countdown, and token comparison — 100% in your browser.">
+<script src="https://cdn.tailwindcss.com"></script>
+<script>
+tailwind.config = { theme: { extend: { colors: { paper: '#FAFAF7', ink: '#1F2937', accent: '#E11D48' }, fontFamily: { display: ['Space Grotesk','system-ui','sans-serif'], mono: ['JetBrains Mono','ui-monospace','SFMono-Regular','Menlo','monospace'] } } } };
+</script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  body { background:#FAFAF7; color:#1F2937; }
+  .dashed-v { width:2px; background-image:linear-gradient(to bottom, currentColor 55%, transparent 45%); background-size:2px 12px; background-repeat:repeat-y; }
+  .json-key { color:#E11D48; font-weight:600; }
+  .json-str { color:#047857; }
+  .json-num { color:#1D4ED8; }
+  .json-bool { color:#9333EA; }
+  .seg { transition: flex-grow .35s ease; }
+  .part-card { box-shadow: 0 1px 0 rgba(31,41,55,.06), 0 12px 32px -18px rgba(31,41,55,.35); }
+  .finding { border-left-width:4px; }
+  ::selection { background:#E11D48; color:#fff; }
+  textarea:focus, button:focus-visible, a:focus-visible { outline:2px solid #E11D48; outline-offset:2px; }
+  .tick { font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body id="top" class="font-display antialiased min-h-screen flex flex-col">
+
+<!-- ============ STICKY HEADER ============ -->
+<header class="sticky top-0 z-50 bg-[#FAFAF7]/90 backdrop-blur border-b border-[#1F2937]/10">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 h-16 flex items-center justify-between">
+    <a href="#top" class="flex items-center gap-2.5">
+      <span class="w-9 h-9 rounded-xl bg-[#1F2937] text-white grid place-items-center font-mono font-bold text-sm relative overflow-hidden">T<span class="absolute -bottom-1 -right-1 w-4 h-4 rounded-full bg-[#E11D48]"></span></span>
+      <span class="text-xl font-bold tracking-tight">Token<span class="text-[#E11D48]">Peek</span></span>
+    </a>
+    <nav class="flex items-center gap-5 text-sm font-medium">
+      <a href="#top" class="hover:text-[#E11D48] transition-colors">Home</a>
+      <a href="https://fixoraa.tech" class="hover:text-[#E11D48] transition-colors">More Tools</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ============ HERO ============ -->
+<section class="mx-auto max-w-6xl px-4 sm:px-6 pt-10 pb-6 text-center">
+  <div class="inline-flex items-center gap-2 rounded-full border border-[#1F2937]/15 bg-white px-4 py-1.5 text-xs font-semibold tracking-wide uppercase mb-5">
+    <span class="w-2 h-2 rounded-full bg-[#E11D48] animate-pulse"></span>
+    Unlimited Free Usage &middot; No signup &middot; No paywall
+  </div>
+  <h1 class="text-3xl sm:text-5xl font-bold tracking-tight leading-tight">JWT Decoder, Debugger<br class="hidden sm:block"> <span class="text-[#E11D48]">&amp; Security Scanner</span></h1>
+  <p class="mt-4 max-w-2xl mx-auto text-[#1F2937]/70 text-base sm:text-lg">Paste any JSON Web Token and watch it come apart like a teardown: header, payload and signature laid out as labeled parts, a plain-English security audit, live expiry countdown, and side-by-side rotation compare. Everything runs 100% in your browser — your tokens never leave this page.</p>
+</section>
+
+<!-- TOP AD (verbatim) -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pt-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <div class="origin-top scale-[0.44] sm:scale-100 shrink-0">
+        <script>
+          atOptions = { 'key' : '4e68ac77881c17fe128a46565d9a4e8c', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} };
+        </script>
+        <script src="https://www.highrevenueformat.com/4e68ac77881c17fe128a46565d9a4e8c/invoke.js"></script>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ TOOL ============ -->
+<main class="mx-auto max-w-6xl px-4 sm:px-6 py-8 w-full">
+
+  <!-- Input card -->
+  <section class="bg-white rounded-2xl border border-[#1F2937]/10 p-5 sm:p-7 part-card">
+    <div class="flex items-center justify-between flex-wrap gap-3 mb-3">
+      <label for="tokenInput" class="text-sm font-bold uppercase tracking-widest text-[#1F2937]/60">Paste your token</label>
+      <span class="text-xs text-[#1F2937]/50 font-mono">Smart paste: Bearer headers, cookies &amp; URLs auto-detected</span>
+    </div>
+    <textarea id="tokenInput" rows="4" spellcheck="false" placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.…" class="w-full font-mono text-sm bg-[#FAFAF7] border border-[#1F2937]/15 rounded-xl p-4 break-all focus:border-[#E11D48] resize-y"></textarea>
+    <div id="pasteNotice" class="hidden mt-3 text-sm font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg px-4 py-2.5"></div>
+    <div id="inputError" class="hidden mt-3 text-sm font-medium text-[#E11D48] bg-rose-50 border border-rose-200 rounded-lg px-4 py-2.5"></div>
+    <div class="mt-4 flex flex-wrap gap-3">
+      <button id="decodeBtn" class="px-6 py-2.5 rounded-xl bg-[#E11D48] text-white font-semibold hover:bg-[#be123c] transition-colors">Decode &amp; Audit</button>
+      <button id="sampleBtn" class="px-6 py-2.5 rounded-xl bg-[#1F2937] text-white font-semibold hover:bg-black transition-colors">Try a sample token</button>
+      <button id="clearBtn" class="px-6 py-2.5 rounded-xl border border-[#1F2937]/20 font-semibold hover:border-[#E11D48] hover:text-[#E11D48] transition-colors">Clear</button>
+    </div>
+    <div id="historyWrap" class="hidden mt-5">
+      <p class="text-xs font-bold uppercase tracking-widest text-[#1F2937]/50 mb-2">Recent tokens (stored only in this browser)</p>
+      <div id="historyChips" class="flex flex-wrap gap-2"></div>
+    </div>
+  </section>
+
+  <!-- Exploded teardown -->
+  <section id="teardown" class="hidden mt-10">
+    <div class="flex items-center gap-3 mb-1">
+      <span class="font-mono text-xs font-bold bg-[#1F2937] text-white rounded px-2 py-1">TEARDOWN</span>
+      <h2 class="text-2xl font-bold tracking-tight">Exploded token anatomy</h2>
+    </div>
+    <p class="text-sm text-[#1F2937]/60 mb-6">Three parts, separated and labeled — like a repair guide for your token.</p>
+
+    <!-- Token strip -->
+    <div class="bg-white rounded-2xl border border-[#1F2937]/10 p-5 part-card mb-2">
+      <p class="text-xs font-bold uppercase tracking-widest text-[#1F2937]/50 mb-3">Full token — segments to scale</p>
+      <div id="tokenStrip" class="flex w-full h-14 rounded-xl overflow-hidden font-mono text-xs sm:text-sm text-white"></div>
+      <div class="flex flex-wrap gap-x-6 gap-y-1 mt-3 text-xs font-mono">
+        <span><span class="inline-block w-3 h-3 rounded-sm bg-[#1F2937] align-middle mr-1"></span>01 Header</span>
+        <span><span class="inline-block w-3 h-3 rounded-sm bg-[#E11D48] align-middle mr-1"></span>02 Payload</span>
+        <span><span class="inline-block w-3 h-3 rounded-sm bg-[#9CA3AF] align-middle mr-1"></span>03 Signature</span>
+      </div>
+    </div>
+
+    <!-- Exploded parts -->
+    <div class="grid md:grid-cols-3 gap-6 mt-6">
+      <!-- PART 01 -->
+      <div>
+        <div class="dashed-v h-12 mx-auto text-[#1F2937] hidden md:block"></div>
+        <div class="bg-white rounded-2xl border-2 border-[#1F2937] part-card overflow-hidden">
+          <div class="bg-[#1F2937] text-white px-5 py-3 flex items-center justify-between">
+            <span class="font-bold text-sm tracking-wide">PART 01 &middot; HEADER</span>
+            <span id="hdrBytes" class="font-mono text-xs opacity-70"></span>
+          </div>
+          <pre id="hdrJson" class="font-mono text-[13px] leading-relaxed p-5 overflow-x-auto whitespace-pre-wrap break-words min-h-[120px]"></pre>
+          <div class="px-5 pb-5 text-xs text-[#1F2937]/60">Declares the token type and the signing algorithm. If this says <span class="font-mono font-semibold">"alg":"none"</span>, the token is unsigned.</div>
+        </div>
+      </div>
+      <!-- PART 02 -->
+      <div>
+        <div class="dashed-v h-12 mx-auto text-[#E11D48] hidden md:block"></div>
+        <div class="bg-white rounded-2xl border-2 border-[#E11D48] part-card overflow-hidden">
+          <div class="bg-[#E11D48] text-white px-5 py-3 flex items-center justify-between">
+            <span class="font-bold text-sm tracking-wide">PART 02 &middot; PAYLOAD</span>
+            <span id="plBytes" class="font-mono text-xs opacity-70"></span>
+          </div>
+          <pre id="plJson" class="font-mono text-[13px] leading-relaxed p-5 overflow-x-auto whitespace-pre-wrap break-words min-h-[120px]"></pre>
+          <div class="px-5 pb-5 text-xs text-[#1F2937]/60">The claims. Base64-encoded, <span class="font-semibold">not encrypted</span> — anyone holding the token can read this.</div>
+        </div>
+      </div>
+      <!-- PART 03 -->
+      <div>
+        <div class="dashed-v h-12 mx-auto text-[#9CA3AF] hidden md:block"></div>
+        <div class="bg-white rounded-2xl border-2 border-[#9CA3AF] part-card overflow-hidden">
+          <div class="bg-[#9CA3AF] text-white px-5 py-3 flex items-center justify-between">
+            <span class="font-bold text-sm tracking-wide">PART 03 &middot; SIGNATURE</span>
+            <span id="sigBytes" class="font-mono text-xs opacity-70"></span>
+          </div>
+          <div class="p-5">
+            <p id="sigValue" class="font-mono text-[13px] break-all leading-relaxed min-h-[60px]"></p>
+            <p id="sigNote" class="mt-4 text-xs text-[#1F2937]/60"></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Security audit -->
+  <section id="auditSection" class="hidden mt-10">
+    <div class="flex items-center gap-3 mb-1 flex-wrap">
+      <span class="font-mono text-xs font-bold bg-[#E11D48] text-white rounded px-2 py-1">SCAN</span>
+      <h2 class="text-2xl font-bold tracking-tight">One-click security audit</h2>
+      <span id="auditScore" class="ml-auto text-sm font-bold"></span>
+    </div>
+    <p class="text-sm text-[#1F2937]/60 mb-5">Checks for <span class="font-mono">alg:none</span>, algorithm-confusion risk, leaked secrets, and expiry problems — each with a plain-English fix.</p>
+    <div id="auditList" class="space-y-3"></div>
+  </section>
+
+  <!-- Expiry timeline -->
+  <section id="expirySection" class="hidden mt-10">
+    <div class="flex items-center gap-3 mb-1">
+      <span class="font-mono text-xs font-bold bg-[#1F2937] text-white rounded px-2 py-1">TIMER</span>
+      <h2 class="text-2xl font-bold tracking-tight">Expiry timeline</h2>
+    </div>
+    <p class="text-sm text-[#1F2937]/60 mb-5">Live countdown to the token's <span class="font-mono">exp</span> claim.</p>
+    <div class="bg-white rounded-2xl border border-[#1F2937]/10 p-5 sm:p-7 part-card">
+      <div class="text-center mb-6">
+        <div id="countdownLive" class="tick font-mono text-4xl sm:text-6xl font-bold text-[#E11D48]">—</div>
+        <div id="countdownSub" class="text-sm text-[#1F2937]/60 mt-2"></div>
+      </div>
+      <div class="relative h-3 rounded-full bg-[#1F2937]/10 overflow-visible" id="tlBar">
+        <div id="tlFill" class="absolute left-0 top-0 h-3 rounded-full bg-gradient-to-r from-[#1F2937] to-[#E11D48]" style="width:0%"></div>
+        <div id="tlNow" class="absolute -top-1.5 w-1.5 h-6 bg-[#E11D48] rounded-full" style="left:0%" title="now"></div>
+      </div>
+      <div class="flex justify-between mt-2 font-mono text-xs text-[#1F2937]/60">
+        <span id="tlIat">issued: —</span>
+        <span id="tlExp">expires: —</span>
+      </div>
+      <p id="expiryNote" class="mt-4 text-sm text-[#1F2937]/70"></p>
+    </div>
+  </section>
+
+  <!-- Compare -->
+  <section id="compareSection" class="hidden mt-10">
+    <div class="flex items-center gap-3 mb-1">
+      <span class="font-mono text-xs font-bold bg-[#1F2937] text-white rounded px-2 py-1">DIFF</span>
+      <h2 class="text-2xl font-bold tracking-tight">Compare two tokens</h2>
+    </div>
+    <p class="text-sm text-[#1F2937]/60 mb-5">Debugging a rotation? Paste the old and new token to spot mismatched claims.</p>
+    <div class="bg-white rounded-2xl border border-[#1F2937]/10 p-5 sm:p-7 part-card">
+      <label for="tokenInputB" class="text-sm font-bold uppercase tracking-widest text-[#1F2937]/60">Token B (paste second token)</label>
+      <textarea id="tokenInputB" rows="3" spellcheck="false" placeholder="Paste the second JWT here…" class="mt-2 w-full font-mono text-sm bg-[#FAFAF7] border border-[#1F2937]/15 rounded-xl p-4 break-all focus:border-[#E11D48] resize-y"></textarea>
+      <button id="compareBtn" class="mt-4 px-6 py-2.5 rounded-xl bg-[#1F2937] text-white font-semibold hover:bg-black transition-colors">Compare A vs B</button>
+      <div id="compareOut" class="hidden mt-6 overflow-x-auto">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="text-left text-xs uppercase tracking-widest text-[#1F2937]/50 border-b border-[#1F2937]/10">
+              <th class="py-2 pr-4">Claim</th><th class="py-2 pr-4">Token A</th><th class="py-2 pr-4">Token B</th><th class="py-2">Match</th>
+            </tr>
+          </thead>
+          <tbody id="compareRows" class="font-mono text-xs"></tbody>
+        </table>
+        <div id="compareNotes" class="mt-4 space-y-2 text-sm"></div>
+      </div>
+    </div>
+  </section>
+
+  <p class="mt-8 text-center text-xs text-[#1F2937]/50 max-w-2xl mx-auto">Privacy: TokenPeek decodes entirely in your browser. Nothing is uploaded, logged, or sent to any server. Signature <em>verification</em> against your secret/key still needs to happen on your own server.</p>
+</main>
+
+<!-- BOTTOM AD (verbatim) -->
+<div class="no-print mx-auto max-w-6xl px-4 sm:px-6 pb-4" role="complementary" aria-label="Advertisement">
+  <div class="mx-auto text-center" style="max-width:728px">
+    <span class="block text-[10px] tracking-[0.18em] uppercase text-slate-400 mb-1.5">Advertisement</span>
+    <div class="flex justify-center overflow-hidden">
+      <script async src="https://js.wpadmngr.com/static/adManager.js" data-admpid="464498"></script>
+    </div>
+  </div>
+</div>
+
+<!-- ============ SEO ARTICLE ============ -->
+<article id="seo-article" class="mx-auto max-w-3xl px-4 sm:px-6 py-10 text-[#1F2937]/85 leading-relaxed">
+  <h2 class="text-3xl font-bold tracking-tight text-[#1F2937] mb-6">The Complete Guide to Decoding JWTs Online: What Every Developer Should Know</h2>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">What is a JWT, really?</h3>
+  <p class="mb-4">A JSON Web Token (JWT) is a compact, self-contained way to pass identity information between two parties — most commonly a client and a server. When you log in to a modern web app, the server often hands your browser a long string that looks like three blocks of gibberish separated by dots, for example <span class="font-mono text-sm">eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjMifQ.SflKxwRJ</span>. That string is your proof of identity: every subsequent API request carries it, and the server trusts whoever presents a valid one. To decode a JWT online, you do not need any account or software — a free JWT decoder like TokenPeek splits the token into its parts right in your browser and shows you exactly what is inside.</p>
+  <p class="mb-4">The power of the format is that the token carries its own data. Traditional session systems store user state on the server and hand the client an opaque session ID. A JWT flips this around: the claims themselves — user ID, roles, permissions, expiry — travel inside the token. The server only needs to verify the signature to trust the contents, which makes JWTs ideal for distributed systems, microservices, and APIs that serve mobile apps, single-page applications, and third-party integrations alike.</p>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">Anatomy of a token: header, payload, signature</h3>
+  <p class="mb-4">Every JWT has exactly three parts, joined by dots. The <strong>header</strong> is a small JSON object that declares the token type (almost always <span class="font-mono text-sm">"typ": "JWT"</span>) and the signing algorithm (<span class="font-mono text-sm">"alg"</span>), such as HS256 or RS256. The <strong>payload</strong> holds the claims — statements about the user or session. Some claims are registered standards: <span class="font-mono text-sm">iss</span> (issuer), <span class="font-mono text-sm">sub</span> (subject, usually the user ID), <span class="font-mono text-sm">aud</span> (audience), <span class="font-mono text-sm">exp</span> (expiry), <span class="font-mono text-sm">nbf</span> (not before), <span class="font-mono text-sm">iat</span> (issued at), and <span class="font-mono text-sm">jti</span> (a unique token ID). Applications add their own public or private claims on top, like roles or tenant IDs.</p>
+  <p class="mb-4">The <strong>signature</strong> is what makes the token trustworthy. The issuer takes the encoded header and payload, signs them with a secret (HMAC) or a private key (RSA/ECDSA), and appends the result as the third segment. When your server receives the token, it re-computes the signature and compares. If a single character of the header or payload was tampered with, the signatures will not match and the token is rejected. This is also why a good JWT debugger always shows the signature segment separately: it is the one part you cannot forge without the key.</p>
+  <p class="mb-4">A critical and widely misunderstood fact: the header and payload are only <strong>base64url-encoded, not encrypted</strong>. Decoding them requires no key at all — that is precisely what a JWT decoder does. Anyone who intercepts your token can read every claim in the payload. Never put passwords, secrets, private keys, or other sensitive data inside a token; keep payloads to identifiers and authorization metadata.</p>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">Why developers decode JWTs online</h3>
+  <p class="mb-4">In day-to-day development, tokens are opaque blobs that either work or they do not — and when they do not, the error is usually a terse <span class="font-mono text-sm">401 Unauthorized</span>. A JWT debugger turns that blob into answers in seconds. Is the token expired? Does the <span class="font-mono text-sm">aud</span> claim match your service, or was this token minted for a different audience? Is the <span class="font-mono text-sm">sub</span> the user you expected, or is your login flow handing out someone else's session? Did the backend suddenly change the signing algorithm? Pasting the token into a decoder answers all of these without touching a terminal.</p>
+  <p class="mb-4">Frontend developers use a decoder to confirm what the API is actually sending back after login — a surprising number of "backend bugs" turn out to be the client attaching an old cached token, or attaching the refresh token where the access token belongs. Mobile developers decode tokens to verify that push-notification services and deep links carry the right claims. QA engineers decode tokens to build precise test cases: a token with a manipulated <span class="font-mono text-sm">exp</span> in the past is the fastest way to test your app's session-expiry handling. Support teams use decoders to read a customer's token (with permission) and immediately see whether the issue is expiry, wrong audience, or a revoked token ID.</p>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">Debugging authentication failures, step by step</h3>
+  <p class="mb-4">When a request fails with 401 or 403, work through the token methodically. First, decode the JWT online and check the structure: a valid token has three segments, and the header and payload must be parseable JSON. Truncated pastes — a missing character at the end is the classic copy-paste error — show up here immediately. Second, read the <span class="font-mono text-sm">alg</span> in the header and confirm your server is configured to verify with that exact algorithm; algorithm mismatches are a silent killer, especially during migrations from HS256 to RS256.</p>
+  <p class="mb-4">Third, check the time claims against the current time. An <span class="font-mono text-sm">exp</span> in the past means the token simply expired — the fix is the refresh flow, not the login flow. An <span class="font-mono text-sm">nbf</span> in the future means the token is not valid yet, which almost always indicates clock skew between the machine that issued the token and the machine verifying it; syncing both to NTP fixes it. An <span class="font-mono text-sm">iat</span> in the future is the same story. Fourth, verify <span class="font-mono text-sm">aud</span> and <span class="font-mono text-sm">iss</span>: a token minted for your staging environment will be rejected by production if the audience differs, and that is working as intended.</p>
+  <p class="mb-4">Finally, if everything looks right but verification still fails, suspect the signature. The secret or public key on the verifier must exactly match what the issuer used. Key rotation gone wrong — deploying the new public key to only half your servers — produces exactly this symptom: the same token verifies on some machines and fails on others. Comparing the old and new tokens side by side, claim by claim, is the fastest way to isolate what changed during a rotation, which is why TokenPeek includes a dedicated token comparison view.</p>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">Security: what a scan should catch</h3>
+  <p class="mb-4">Decoding is only half the job; the other half is asking whether the token <em>should</em> be trusted. The most dangerous finding is <span class="font-mono text-sm">"alg": "none"</span>: an unsigned token that any attacker can forge by editing the payload. Servers must be configured to reject such tokens outright — never let the client choose the algorithm. Closely related is <strong>algorithm confusion</strong>: if a server verifies HMAC tokens but an attacker supplies a server's RSA public key as the HMAC secret, they can sign arbitrary tokens. The defense is to pin the expected algorithm on the server and never trust the <span class="font-mono text-sm">alg</span> field from the incoming token.</p>
+  <p class="mb-4">Next, scan the payload for sensitive data. Because the payload is merely encoded, emails, phone numbers, internal IDs, and — in the worst cases — passwords or API keys placed there by mistake are readable by anyone holding the token. A good security scan flags credential-like keys, private-key blocks, Social Security Number patterns, and card-number patterns, and tells you in plain language how to fix each one: remove the data from the token, rotate anything that leaked, and keep tokens to identifiers and roles. Expiry deserves its own check: tokens without an <span class="font-mono text-sm">exp</span> claim never expire, which turns any leak into a permanent breach. Access tokens should live for minutes to hours, not months, with a refresh-token mechanism handling longer sessions.</p>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">Understanding exp, iat, and nbf</h3>
+  <p class="mb-4">The three time claims are Unix timestamps — seconds since 1970-01-01 UTC. <span class="font-mono text-sm">exp</span> is the moment after which the token must not be accepted. <span class="font-mono text-sm">iat</span> records when the token was issued, which lets you compute the token's total lifetime (<span class="font-mono text-sm">exp − iat</span>) — a useful sanity check, since lifetimes over a year usually indicate a misconfigured issuer. <span class="font-mono text-sm">nbf</span> sets the moment before which the token must not be accepted, useful for tokens issued ahead of a scheduled event.</p>
+  <p class="mb-4">A live countdown to <span class="font-mono text-sm">exp</span> is one of the most practical debugging aids: instead of converting a ten-digit number in your head, you see "2h 14m 03s remaining" ticking down in real time. When a user reports being logged out unexpectedly, comparing the countdown against the session behavior tells you instantly whether the frontend, the token lifetime, or the refresh logic is at fault. Short-lived tokens also limit damage: even if a token is stolen, its usefulness expires with it, which is why security teams push lifetimes down while investing in smooth silent-refresh flows.</p>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">Token rotation without the guesswork</h3>
+  <p class="mb-4">Rotation — replacing an old signing key or token with a new one — is where JWT debugging gets painful. During a rotation window, two tokens exist at once, and something inevitably goes wrong: the new token carries a different <span class="font-mono text-sm">iss</span>, the <span class="font-mono text-sm">aud</span> was changed, or the new token was issued with a shorter lifetime than the deployment scripts assumed. A side-by-side comparison that lines up every claim from both tokens, highlights mismatches, and notes whether both are currently valid turns a forty-minute investigation into a two-minute one.</p>
+  <p class="mb-4">The pattern to look for in a healthy rotation is simple: same <span class="font-mono text-sm">sub</span>, same <span class="font-mono text-sm">iss</span> and <span class="font-mono text-sm">aud</span>, different <span class="font-mono text-sm">jti</span> values, and an expiry overlap during which both tokens validate while clients migrate. Once the new token is fully deployed, the old one should be revoked or allowed to expire quickly. If both tokens stay valid indefinitely, you have not rotated — you have duplicated — and the old token remains a live credential for attackers.</p>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">Smart paste and everyday workflows</h3>
+  <p class="mb-4">Real tokens rarely arrive as clean strings. They hide inside <span class="font-mono text-sm">Authorization: Bearer …</span> headers copied from browser devtools, inside cookie strings with half a dozen other values, inside URL query parameters, or URL-encoded in a redirect. A decoder with smart paste extracts the token-shaped value automatically, so you paste the whole messy blob and get straight to the decoded result. It is a small feature that saves an surprising amount of time when you are tailing logs or inspecting network traffic.</p>
+  <p class="mb-4">Keeping a short history of recently decoded tokens — stored only in your own browser — is equally handy during a debugging session: you can flip between the token from staging and the token from production without re-copying either. And because decoding happens entirely client-side, there is no privacy trade-off in pasting real tokens during development; nothing is uploaded or logged. That said, treat production tokens with care as a habit: they are credentials, so prefer decoding them in a private browser session and never paste them into tools you do not trust.</p>
+
+  <h3 class="text-xl font-bold text-[#1F2937] mt-8 mb-3">JWT best practices checklist</h3>
+  <p class="mb-4">To wrap up, the practices that separate safe JWT usage from risky usage: always verify the signature on the server with the correct key — decoding is not verification. Reject <span class="font-mono text-sm">alg: none</span> and pin the expected algorithm. Keep access-token lifetimes short and use refresh tokens for long sessions. Include and verify <span class="font-mono text-sm">aud</span> and <span class="font-mono text-sm">iss</span> so tokens cannot be replayed across services. Never store sensitive data in the payload. Use the <span class="font-mono text-sm">jti</span> claim if you need revocation. Transmit tokens over HTTPS only, prefer httpOnly secure cookies or memory storage over localStorage for high-value apps, and rotate signing keys on a schedule. With those habits — and a good JWT decoder and debugger at hand — tokens become one of the most reliable parts of your stack instead of its most mysterious.</p>
+</article>
+
+<!-- ============ FAQs ============ -->
+<section class="mx-auto max-w-3xl px-4 sm:px-6 pb-10">
+  <h2 class="text-2xl font-bold tracking-tight mb-6">Frequently asked questions</h2>
+  <div class="space-y-4" id="faqList">
+    <details class="bg-white rounded-xl border border-[#1F2937]/10 p-5 part-card">
+      <summary class="font-semibold cursor-pointer">How do I decode a JWT online?</summary>
+      <p class="mt-3 text-sm text-[#1F2937]/70">Paste the token into TokenPeek's decoder and click "Decode &amp; Audit". The tool splits it into header, payload, and signature, pretty-prints the JSON claims, and runs a security scan — all instantly, with nothing uploaded to any server.</p>
+    </details>
+    <details class="bg-white rounded-xl border border-[#1F2937]/10 p-5 part-card">
+      <summary class="font-semibold cursor-pointer">Is it safe to paste my JWT into an online decoder?</summary>
+      <p class="mt-3 text-sm text-[#1F2937]/70">TokenPeek decodes 100% in your browser — your token never leaves the page, is never uploaded, and is never logged. That said, a JWT is a credential, so as a habit prefer decoding development or staging tokens, and avoid pasting production tokens into any tool you do not fully trust.</p>
+    </details>
+    <details class="bg-white rounded-xl border border-[#1F2937]/10 p-5 part-card">
+      <summary class="font-semibold cursor-pointer">What does "alg: none" mean, and why is it dangerous?</summary>
+      <p class="mt-3 text-sm text-[#1F2937]/70">It means the token is unsigned — there is no signature to verify. Anyone who sees the token can edit its claims (for example, changing their role to "admin") and the token will still look valid to a server that accepts it. TokenPeek flags this as a critical finding, and your server should be configured to reject such tokens outright.</p>
+    </details>
+    <details class="bg-white rounded-xl border border-[#1F2937]/10 p-5 part-card">
+      <summary class="font-semibold cursor-pointer">Can TokenPeek verify my token's signature?</summary>
+      <p class="mt-3 text-sm text-[#1F2937]/70">No — and no purely client-side decoder should claim to. Real signature verification requires your secret key or public key, which must never be pasted into a website. TokenPeek shows you the signature segment and audits everything around it (algorithm, expiry, sensitive data), but the cryptographic check belongs on your own server.</p>
+    </details>
+    <details class="bg-white rounded-xl border border-[#1F2937]/10 p-5 part-card">
+      <summary class="font-semibold cursor-pointer">Why does my token say "expired" when I just logged in?</summary>
+      <p class="mt-3 text-sm text-[#1F2937]/70">The usual causes: your app cached an old token and is not using the fresh one from the latest login, the issuer's clock and your clock disagree (clock skew — check the iat claim), or the token lifetime is configured extremely short. Decode the token and check the exp countdown to see exactly when it lapsed.</p>
+    </details>
+    <details class="bg-white rounded-xl border border-[#1F2937]/10 p-5 part-card">
+      <summary class="font-semibold cursor-pointer">How do I compare two JWTs during a key rotation?</summary>
+      <p class="mt-3 text-sm text-[#1F2937]/70">Decode the first token, then paste the second into the "Compare two tokens" section and click compare. TokenPeek lines up every claim side by side, highlights mismatches, and tells you whether the pair looks like a healthy rotation (same subject, different token IDs, overlapping validity) or something went wrong.</p>
+    </details>
+  </div>
+</section>
+
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  "mainEntity": [
+    { "@type": "Question", "name": "How do I decode a JWT online?", "acceptedAnswer": { "@type": "Answer", "text": "Paste the token into TokenPeek's decoder and click Decode & Audit. The tool splits it into header, payload, and signature, pretty-prints the JSON claims, and runs a security scan — all instantly, with nothing uploaded to any server." } },
+    { "@type": "Question", "name": "Is it safe to paste my JWT into an online decoder?", "acceptedAnswer": { "@type": "Answer", "text": "TokenPeek decodes 100% in your browser — your token never leaves the page, is never uploaded, and is never logged. As a habit, prefer decoding development or staging tokens, and avoid pasting production tokens into any tool you do not fully trust." } },
+    { "@type": "Question", "name": "What does \"alg: none\" mean, and why is it dangerous?", "acceptedAnswer": { "@type": "Answer", "text": "It means the token is unsigned — there is no signature to verify. Anyone who sees the token can edit its claims and it will still look valid to a server that accepts it. Servers should be configured to reject such tokens outright." } },
+    { "@type": "Question", "name": "Can TokenPeek verify my token's signature?", "acceptedAnswer": { "@type": "Answer", "text": "No. Real signature verification requires your secret key or public key, which must never be pasted into a website. TokenPeek audits everything around the signature, but the cryptographic check belongs on your own server." } },
+    { "@type": "Question", "name": "Why does my token say \"expired\" when I just logged in?", "acceptedAnswer": { "@type": "Answer", "text": "Usual causes: your app cached an old token instead of using the fresh one, clock skew between issuer and verifier, or an extremely short configured token lifetime. Decode the token and check the exp countdown." } },
+    { "@type": "Question", "name": "How do I compare two JWTs during a key rotation?", "acceptedAnswer": { "@type": "Answer", "text": "Decode the first token, paste the second into the Compare two tokens section, and click compare. TokenPeek lines up every claim side by side, highlights mismatches, and reports whether the pair looks like a healthy rotation." } }
+  ]
+}
+</script>
+
+<footer class="mt-auto border-t border-[#1F2937]/10 bg-white">
+  <div class="mx-auto max-w-6xl px-4 sm:px-6 py-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div class="flex items-center gap-2.5">
+      <span class="w-8 h-8 rounded-lg bg-[#1F2937] text-white grid place-items-center font-mono font-bold text-xs relative overflow-hidden">T<span class="absolute -bottom-1 -right-1 w-3 h-3 rounded-full bg-[#E11D48]"></span></span>
+      <span class="font-bold">Token<span class="text-[#E11D48]">Peek</span></span>
+      <span class="text-xs text-[#1F2937]/50">— decode JWTs safely, in your browser.</span>
+    </div>
+    <nav class="flex items-center gap-5 text-sm font-medium">
+      <a href="#top" class="hover:text-[#E11D48] transition-colors">Home</a>
+      <a href="https://fixoraa.tech" class="hover:text-[#E11D48] transition-colors">More Tools</a>
+    </nav>
+  </div>
+  <p class="text-center text-xs text-[#1F2937]/40 pb-6">&copy; 2026 TokenPeek. Free unlimited use. Your tokens never leave your browser.</p>
+</footer>
+
+<script id="tokenpeek-jwt-decoder-lib">
+/* TokenPeek JWT core logic — PURE functions only.
+   No DOM / window / document / localStorage / navigator here.
+   Top-level function declarations so the test harness can eval this file. */
+
+function utf8Decode(bytes) {
+  var out = '';
+  var i = 0;
+  while (i < bytes.length) {
+    var b = bytes[i];
+    if (b < 0x80) { out += String.fromCharCode(b); i += 1; }
+    else if ((b & 0xE0) === 0xC0) {
+      if (i + 1 >= bytes.length) return null;
+      out += String.fromCharCode(((b & 0x1F) << 6) | (bytes[i + 1] & 0x3F));
+      i += 2;
+    } else if ((b & 0xF0) === 0xE0) {
+      if (i + 2 >= bytes.length) return null;
+      out += String.fromCharCode(((b & 0x0F) << 12) | ((bytes[i + 1] & 0x3F) << 6) | (bytes[i + 2] & 0x3F));
+      i += 3;
+    } else if ((b & 0xF8) === 0xF0) {
+      if (i + 3 >= bytes.length) return null;
+      var cp = ((b & 0x07) << 18) | ((bytes[i + 1] & 0x3F) << 12) | ((bytes[i + 2] & 0x3F) << 6) | (bytes[i + 3] & 0x3F);
+      cp -= 0x10000;
+      out += String.fromCharCode(0xD800 + (cp >> 10), 0xDC00 + (cp & 0x3FF));
+      i += 4;
+    } else { return null; }
+  }
+  return out;
+}
+
+function base64UrlDecode(str) {
+  if (typeof str !== 'string' || str.length === 0) return null;
+  var s = str.replace(/-/g, '+').replace(/_/g, '/');
+  var pad = s.length % 4;
+  if (pad === 1) return null;
+  if (pad > 0) s += '===='.slice(0, 4 - pad);
+  if (!/^[A-Za-z0-9+/=]+$/.test(s)) return null;
+  var map = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+  var bytes = [];
+  for (var i = 0; i < s.length; i += 4) {
+    var c0 = s.charAt(i), c1 = s.charAt(i + 1), c2 = s.charAt(i + 2), c3 = s.charAt(i + 3);
+    var a = map.indexOf(c0), b = map.indexOf(c1);
+    var c = c2 === '=' ? -1 : map.indexOf(c2);
+    var d = c3 === '=' ? -1 : map.indexOf(c3);
+    if (a < 0 || b < 0) return null;
+    if (c < 0 && c2 !== '=') return null;
+    if (d < 0 && c3 !== '=') return null;
+    var n = (a << 18) | (b << 12) | (c < 0 ? 0 : (c << 6)) | (d < 0 ? 0 : d);
+    bytes.push((n >> 16) & 255);
+    if (c >= 0) bytes.push((n >> 8) & 255);
+    if (d >= 0) bytes.push(n & 255);
+  }
+  return utf8Decode(bytes);
+}
+
+function safeJsonParse(text) {
+  try {
+    return { ok: true, value: JSON.parse(text) };
+  } catch (e) {
+    return { ok: false };
+  }
+}
+
+function jwtSegmentPattern() {
+  return /[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]{4,}\.[A-Za-z0-9_-]*/;
+}
+
+/* Smart paste: pull a JWT out of Bearer headers, cookie strings,
+   query strings, or URL-encoded blobs. Returns { token, method, note }. */
+function extractToken(raw) {
+  if (raw === null || raw === undefined) return { token: null, method: 'none', note: 'empty input' };
+  var input = String(raw);
+  if (!input.trim()) return { token: null, method: 'none', note: 'empty input' };
+
+  var decoded = input;
+  try {
+    if (/%[0-9A-Fa-f]{2}/.test(input)) decoded = decodeURIComponent(input);
+  } catch (e) { decoded = input; }
+
+  var bearer = decoded.match(/bearer\s+([A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z0-9_-]*)/i);
+  if (bearer) {
+    return { token: bearer[1], method: 'bearer', note: 'Extracted from "Authorization: Bearer …" header' };
+  }
+
+  var m = decoded.match(jwtSegmentPattern());
+  if (m) {
+    var method = 'plain';
+    var note = 'Token pasted directly';
+    if (/=/.test(decoded) && /(^|[;&\s])[A-Za-z0-9_.-]+=[^;\s]*/.test(decoded)) {
+      method = 'cookie';
+      note = 'Extracted from cookie / key=value string';
+    } else if (/[?&][A-Za-z0-9_.-]+=/.test(decoded)) {
+      method = 'query';
+      note = 'Extracted from URL query string';
+    }
+    return { token: m[0].replace(/[."',;)}\]]+$/, ''), method: method, note: note };
+  }
+  return { token: null, method: 'none', note: 'No JWT-shaped value found' };
+}
+
+/* Parse a JWT into header / payload / signature. Never throws. */
+function parseJwt(token) {
+  if (typeof token !== 'string' || !token.trim()) {
+    return { ok: false, error: 'empty', header: null, payload: null, signature: '', segments: [], alg: '' };
+  }
+  var t = token.trim();
+  var parts = t.split('.');
+  if (parts.length < 2 || parts.length > 3) {
+    return { ok: false, error: 'structure', header: null, payload: null, signature: '', segments: [], alg: '' };
+  }
+  var headerText = base64UrlDecode(parts[0]);
+  var payloadText = base64UrlDecode(parts[1]);
+  if (headerText === null) {
+    return { ok: false, error: 'header-decode', header: null, payload: null, signature: '', segments: [], alg: '' };
+  }
+  if (payloadText === null) {
+    return { ok: false, error: 'payload-decode', header: null, payload: null, signature: '', segments: [], alg: '' };
+  }
+  var hj = safeJsonParse(headerText);
+  var pj = safeJsonParse(payloadText);
+  if (!hj.ok || typeof hj.value !== 'object' || hj.value === null || Array.isArray(hj.value)) {
+    return { ok: false, error: 'header-json', header: null, payload: null, signature: '', segments: [], alg: '' };
+  }
+  if (!pj.ok || typeof pj.value !== 'object' || pj.value === null || Array.isArray(pj.value)) {
+    return { ok: false, error: 'payload-json', header: null, payload: null, signature: '', segments: [], alg: '' };
+  }
+  return {
+    ok: true,
+    error: '',
+    header: hj.value,
+    payload: pj.value,
+    signature: parts.length === 3 ? parts[2] : '',
+    segments: parts,
+    alg: String(hj.value.alg || '')
+  };
+}
+
+/* Scan the payload for sensitive-data patterns. Returns hits. */
+function findSensitiveClaims(payload) {
+  var hits = [];
+  var json;
+  try { json = JSON.stringify(payload); } catch (e) { return hits; }
+  if (!json) return hits;
+
+  if (/"(password|passwd|pwd|secret|api[_-]?key|private[_-]?key)"\s*:/i.test(json)) {
+    hits.push({ type: 'credential', label: 'Credential-like key found in payload', severity: 'critical' });
+  }
+  if (/-----BEGIN (RSA |EC |DSA |OPENSSH )?PRIVATE KEY-----/.test(json)) {
+    hits.push({ type: 'private-key', label: 'Private key material in payload', severity: 'critical' });
+  }
+  if (/\b\d{3}-\d{2}-\d{4}\b/.test(json)) {
+    hits.push({ type: 'ssn', label: 'Possible Social Security Number pattern (###-##-####)', severity: 'critical' });
+  }
+  if (/\b(?:\d[ -]?){13,16}\b/.test(json) && /(?:\d[ -]?){13,}/.test(json)) {
+    hits.push({ type: 'card', label: 'Possible payment-card number pattern', severity: 'critical' });
+  }
+  if (/[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}/.test(json)) {
+    hits.push({ type: 'email', label: 'Email address in payload', severity: 'warn' });
+  }
+  if (/"(phone|mobile|tel)"\s*:\s*"[^"]*\d{7,}[^"]*"/i.test(json)) {
+    hits.push({ type: 'phone', label: 'Phone number in payload', severity: 'warn' });
+  }
+  return hits;
+}
+
+function severityRank(s) {
+  if (s === 'critical') return 0;
+  if (s === 'warn') return 1;
+  return 2;
+}
+
+/* One-click security audit. Returns findings sorted critical → warn → ok. */
+function auditToken(parsed, nowMs) {
+  var findings = [];
+  var nowSec = Math.floor((nowMs || Date.now()) / 1000);
+
+  if (!parsed || !parsed.ok) {
+    findings.push({
+      severity: 'critical',
+      title: 'Token does not decode',
+      detail: 'The header or payload segment is not valid base64url JSON, so nothing below can be trusted.',
+      fix: 'Copy the token again carefully — whitespace, line breaks, or a truncated paste are the usual cause.'
+    });
+    return findings;
+  }
+
+  var header = parsed.header || {};
+  var payload = parsed.payload || {};
+  var alg = String(header.alg || '').toLowerCase();
+  var knownAlgs = ['hs256', 'hs384', 'hs512', 'rs256', 'rs384', 'rs512', 'es256', 'es384', 'es512', 'ps256', 'ps384', 'ps512', 'eddsa', 'none'];
+
+  if (alg === 'none') {
+    findings.push({
+      severity: 'critical',
+      title: 'Unsigned token (alg: none)',
+      detail: 'This token carries no signature. Anyone who can see it can rewrite its claims and your server would still accept it.',
+      fix: 'Never accept alg:none in production. Configure your server to reject unsigned tokens and re-issue this token with HS256 or RS256.'
+    });
+  } else if (alg === 'hs256' || alg === 'hs384' || alg === 'hs512') {
+    findings.push({
+      severity: 'warn',
+      title: 'HMAC algorithm — guard against key confusion',
+      detail: 'HMAC tokens are verified with a shared secret. If your server ever mixes up public keys and HMAC secrets, an attacker can forge tokens.',
+      fix: 'Pin the expected algorithm on your server (do not trust the alg field from the client) and keep the HMAC secret long, random, and server-side only.'
+    });
+  } else if (!header.alg) {
+    findings.push({
+      severity: 'warn',
+      title: 'No alg declared in header',
+      detail: 'A token without an algorithm claim forces verifiers to guess, which invites downgrade attacks.',
+      fix: 'Re-issue the token with an explicit alg such as RS256, and reject tokens whose header lacks alg on the server.'
+    });
+  } else if (knownAlgs.indexOf(alg) === -1) {
+    findings.push({
+      severity: 'warn',
+      title: 'Unrecognized algorithm "' + header.alg + '"',
+      detail: 'Verifiers may not know how to check this signature, so the token could be accepted without real verification.',
+      fix: 'Use a standard algorithm (HS256, RS256, ES256) from a trusted JWT library.'
+    });
+  }
+
+  if (!parsed.signature && alg !== 'none') {
+    findings.push({
+      severity: 'warn',
+      title: 'Signature segment is empty',
+      detail: 'The third segment is missing, so there is nothing to verify the token against.',
+      fix: 'Re-issue the token with its signature intact, and reject signature-less tokens server-side.'
+    });
+  }
+
+  var exp = payload.exp;
+  var expNum = (typeof exp === 'number' && isFinite(exp)) ? exp : null;
+  if (expNum === null) {
+    findings.push({
+      severity: 'warn',
+      title: 'No expiry (exp) claim',
+      detail: 'This token never expires. If it leaks, it works forever — for the attacker and for you.',
+      fix: 'Add an exp claim with a short lifetime (minutes to a few hours for access tokens) and rotate regularly.'
+    });
+  } else {
+    var remaining = expNum - nowSec;
+    if (remaining <= 0) {
+      findings.push({
+        severity: 'critical',
+        title: 'Token is expired',
+        detail: 'Its exp timestamp is in the past, so a correctly configured server will reject it.',
+        fix: 'Refresh the token (use the refresh-token flow) instead of reusing this one.'
+      });
+    } else if (remaining < 300) {
+      findings.push({
+        severity: 'warn',
+        title: 'Expires in under 5 minutes',
+        detail: 'The token is technically valid but will stop working very soon.',
+        fix: 'If this is a debugging session, grab a fresh token; in production, refresh proactively before expiry.'
+      });
+    }
+    if (typeof payload.iat === 'number' && expNum - payload.iat > 365 * 86400) {
+      findings.push({
+        severity: 'warn',
+        title: 'Lifetime longer than a year',
+        detail: 'A token valid for over a year behaves almost like a permanent credential.',
+        fix: 'Shorten the lifetime and add a refresh mechanism instead.'
+      });
+    }
+  }
+
+  if (typeof payload.nbf === 'number' && payload.nbf > nowSec) {
+    findings.push({
+      severity: 'warn',
+      title: 'Not valid yet (nbf in the future)',
+      detail: 'The not-before timestamp has not arrived, so servers should reject this token right now.',
+      fix: 'Check for clock skew between the issuer and your machine, or wait until the nbf time passes.'
+    });
+  }
+  if (typeof payload.iat === 'number' && payload.iat > nowSec + 60) {
+    findings.push({
+      severity: 'warn',
+      title: 'Issued in the future (clock skew?)',
+      detail: 'The iat timestamp is ahead of your clock, which usually means the issuer and verifier clocks disagree.',
+      fix: 'Sync both machines to NTP; allow only a small leeway (30–60s) for skew.'
+    });
+  }
+
+  var hits = findSensitiveClaims(payload);
+  for (var i = 0; i < hits.length; i++) {
+    var h = hits[i];
+    var fixText = h.severity === 'critical'
+      ? 'Remove it from the token immediately and rotate the exposed secret. Keep tokens to IDs and roles only.'
+      : 'JWT payloads are only base64-encoded, not encrypted — anyone holding the token can read this. Move it server-side.';
+    findings.push({
+      severity: h.severity,
+      title: 'Sensitive data: ' + h.label,
+      detail: 'A JWT payload is readable by anyone who holds the token; it is encoded, not encrypted.',
+      fix: fixText
+    });
+  }
+
+  if (!payload.aud) {
+    findings.push({
+      severity: 'warn',
+      title: 'No audience (aud) claim',
+      detail: 'Without aud, a token minted for one service can be replayed against another service that trusts the same issuer.',
+      fix: 'Set aud to the intended service and verify it on every request.'
+    });
+  }
+  if (!payload.sub) {
+    findings.push({
+      severity: 'warn',
+      title: 'No subject (sub) claim',
+      detail: 'There is no stable identifier for who this token belongs to.',
+      fix: 'Include a sub claim with the user or service ID.'
+    });
+  }
+
+  var hasCritical = false;
+  for (var j = 0; j < findings.length; j++) {
+    if (findings[j].severity === 'critical') { hasCritical = true; break; }
+  }
+  findings.push({
+    severity: hasCritical ? 'warn' : 'ok',
+    title: hasCritical ? 'Audit complete — issues need attention' : 'Header and payload decode cleanly',
+    detail: hasCritical
+      ? 'The token decodes, but the critical findings above should be fixed before this token is trusted in production.'
+      : 'No critical problems were found in the structure, algorithm, expiry, or payload contents checked by this scan.',
+    fix: hasCritical
+      ? 'Work through the critical items top-down; most are fixed by re-issuing the token correctly.'
+      : 'This scan checks common issues client-side; always verify the signature server-side with your own secret or public key.'
+  });
+
+  findings.sort(function (a, b) { return severityRank(a.severity) - severityRank(b.severity); });
+  return findings;
+}
+
+/* Human countdown to an exp timestamp (seconds). */
+function formatCountdown(expSec, nowMs) {
+  var now = nowMs || Date.now();
+  if (typeof expSec !== 'number' || !isFinite(expSec)) {
+    return { expired: false, hasExpiry: false, text: 'No expiry set', days: 0, hours: 0, minutes: 0, seconds: 0 };
+  }
+  var diff = Math.floor(expSec * 1000 - now);
+  if (diff <= 0) {
+    return { expired: true, hasExpiry: true, text: 'Expired', days: 0, hours: 0, minutes: 0, seconds: 0 };
+  }
+  var total = Math.floor(diff / 1000);
+  var days = Math.floor(total / 86400);
+  var hours = Math.floor((total % 86400) / 3600);
+  var minutes = Math.floor((total % 3600) / 60);
+  var seconds = total % 60;
+  var parts = [];
+  if (days > 0) parts.push(days + 'd');
+  parts.push(hours + 'h');
+  parts.push((minutes < 10 ? '0' : '') + minutes + 'm');
+  parts.push((seconds < 10 ? '0' : '') + seconds + 's');
+  return { expired: false, hasExpiry: true, text: parts.join(' '), days: days, hours: hours, minutes: minutes, seconds: seconds };
+}
+
+/* Side-by-side compare of two parsed tokens (rotation debugging). */
+function compareTokens(a, b, nowMs) {
+  var rows = [];
+  function val(p, key) {
+    if (!p || !p.ok) return '—';
+    var v = key === 'alg' ? (p.header || {})[key] : (p.payload || {})[key];
+    if (v === undefined || v === null) return '—';
+    if (typeof v === 'object') return JSON.stringify(v);
+    if ((key === 'exp' || key === 'iat' || key === 'nbf') && typeof v === 'number') {
+      return new Date(v * 1000).toISOString();
+    }
+    return String(v);
+  }
+  var claims = [
+    { key: 'alg', label: 'Algorithm' },
+    { key: 'typ', label: 'Type' },
+    { key: 'sub', label: 'Subject' },
+    { key: 'iss', label: 'Issuer' },
+    { key: 'aud', label: 'Audience' },
+    { key: 'exp', label: 'Expires' },
+    { key: 'iat', label: 'Issued at' },
+    { key: 'jti', label: 'Token ID' }
+  ];
+  for (var i = 0; i < claims.length; i++) {
+    var c = claims[i];
+    var av = val(a, c.key), bv = val(b, c.key);
+    rows.push({ claim: c.label, a: av, b: bv, match: av === bv });
+  }
+  var notes = [];
+  if (!a || !a.ok || !b || !b.ok) {
+    notes.push('Both tokens must decode before they can be compared.');
+    return { rows: rows, notes: notes };
+  }
+  var pa = a.payload || {}, pb = b.payload || {};
+  if (pa.sub && pa.sub === pb.sub && pa.jti !== pb.jti) {
+    notes.push('Same subject with different token IDs — this looks like a rotation pair (old token replaced by new).');
+  }
+  if (pa.sub && pa.sub !== pb.sub) {
+    notes.push('Subjects differ — these tokens belong to different users or services.');
+  }
+  if (String((a.header || {}).alg) !== String((b.header || {}).alg)) {
+    notes.push('Algorithms differ between the two tokens — make sure your verifier expects both.');
+  }
+  var nowSec = Math.floor((nowMs || Date.now()) / 1000);
+  var aLive = typeof pa.exp === 'number' && pa.exp > nowSec;
+  var bLive = typeof pb.exp === 'number' && pb.exp > nowSec;
+  if (aLive && bLive) notes.push('Both tokens are currently valid — during rotation, revoke or short-expire the old one.');
+  if (!aLive && bLive) notes.push('Token A is expired and Token B is valid — rotation appears complete.');
+  if (aLive && !bLive) notes.push('Token A is valid but Token B is expired — check that you deployed the right token.');
+  if (notes.length === 0) notes.push('No rotation anomalies detected between these two tokens.');
+  return { rows: rows, notes: notes };
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+/* Tiny JSON syntax highlighter — pure string transform, XSS-safe. */
+function highlightJson(jsonText) {
+  var re = /("(\\u[a-fA-F0-9]{4}|\\[^u]|[^\\"])*")(\s*:)?|\b(true|false|null)\b|-?\d+(\.\d+)?([eE][+-]?\d+)?/g;
+  var src = String(jsonText);
+  var out = '', last = 0, m;
+  while ((m = re.exec(src)) !== null) {
+    out += escapeHtml(src.slice(last, m.index));
+    var cls = 'json-num';
+    if (/^"/.test(m[0])) cls = m[3] ? 'json-key' : 'json-str';
+    else if (m[4]) cls = 'json-bool';
+    out += '<span class="' + cls + '">' + escapeHtml(m[0]) + '</span>';
+    last = m.index + m[0].length;
+    if (m[0].length === 0) re.lastIndex++;
+  }
+  out += escapeHtml(src.slice(last));
+  return out;
+}
+
+function prettyPrint(obj) {
+  try {
+    return JSON.stringify(obj, null, 2);
+  } catch (e) {
+    return String(obj);
+  }
+}
+
+</script>
+
+<script>
+(function () {
+  'use strict';
+  var $ = function (id) { return document.getElementById(id); };
+  var tokenInput = $('tokenInput'), decodeBtn = $('decodeBtn'), sampleBtn = $('sampleBtn'), clearBtn = $('clearBtn');
+  var pasteNotice = $('pasteNotice'), inputError = $('inputError');
+  var countdownTimer = null, currentExpSec = null;
+
+  function b64urlEncode(str) {
+    var b64 = btoa(unescape(encodeURIComponent(str)));
+    return b64.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+  }
+  function makeSampleToken() {
+    var header = b64urlEncode(JSON.stringify({ alg: 'HS256', typ: 'JWT' }));
+    var nowS = Math.floor(Date.now() / 1000);
+    var payload = b64urlEncode(JSON.stringify({
+      sub: 'user_90210', name: 'Ava Sharma', email: 'ava.sharma@example.com',
+      role: 'admin', iss: 'tokenpeek-demo', aud: 'demo-api',
+      iat: nowS - 600, nbf: nowS - 600, exp: nowS + 7200,
+      jti: 'd4e5f6a7-b8c9-4d1e-a2b3-c4d5e6f7a8b9'
+    }));
+    return header + '.' + payload + '.' + b64urlEncode('demo-signature-not-real');
+  }
+
+  function showError(msg) {
+    if (!msg) { inputError.classList.add('hidden'); inputError.textContent = ''; return; }
+    inputError.textContent = msg; inputError.classList.remove('hidden');
+  }
+  function showNotice(msg) {
+    if (!msg) { pasteNotice.classList.add('hidden'); pasteNotice.textContent = ''; return; }
+    pasteNotice.textContent = msg; pasteNotice.classList.remove('hidden');
+  }
+
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem('tokenpeek-history') || '[]'); }
+    catch (e) { return []; }
+  }
+  function pushHistory(token) {
+    try {
+      var h = getHistory().filter(function (t) { return t !== token; });
+      h.unshift(token); h = h.slice(0, 8);
+      localStorage.setItem('tokenpeek-history', JSON.stringify(h));
+      renderHistory();
+    } catch (e) {}
+  }
+  function renderHistory() {
+    var h = getHistory(), wrap = $('historyWrap'), chips = $('historyChips');
+    if (!h.length) { wrap.classList.add('hidden'); return; }
+    wrap.classList.remove('hidden'); chips.innerHTML = '';
+    h.forEach(function (t) {
+      var b = document.createElement('button');
+      b.className = 'font-mono text-xs bg-[#FAFAF7] border border-[#1F2937]/15 rounded-lg px-3 py-1.5 hover:border-[#E11D48] hover:text-[#E11D48] transition-colors max-w-full truncate';
+      b.textContent = t.slice(0, 42) + '…';
+      b.title = 'Reload this token';
+      b.addEventListener('click', function () { tokenInput.value = t; decode(); });
+      chips.appendChild(b);
+    });
+  }
+
+  function sevStyles(sev) {
+    if (sev === 'critical') return { pill: 'bg-[#E11D48] text-white', box: 'border-[#E11D48] bg-rose-50/60', label: 'CRITICAL' };
+    if (sev === 'warn') return { pill: 'bg-amber-500 text-white', box: 'border-amber-500 bg-amber-50/60', label: 'WARNING' };
+    return { pill: 'bg-emerald-600 text-white', box: 'border-emerald-600 bg-emerald-50/60', label: 'OK' };
+  }
+
+  function renderAudit(findings) {
+    var list = $('auditList'); list.innerHTML = '';
+    var crit = findings.filter(function (f) { return f.severity === 'critical'; }).length;
+    var warn = findings.filter(function (f) { return f.severity === 'warn'; }).length;
+    var score = $('auditScore');
+    if (crit > 0) { score.textContent = crit + ' critical · ' + warn + ' warnings'; score.className = 'ml-auto text-sm font-bold text-[#E11D48]'; }
+    else if (warn > 0) { score.textContent = warn + ' warnings · 0 critical'; score.className = 'ml-auto text-sm font-bold text-amber-600'; }
+    else { score.textContent = 'No issues found'; score.className = 'ml-auto text-sm font-bold text-emerald-600'; }
+    findings.forEach(function (f) {
+      var s = sevStyles(f.severity);
+      var div = document.createElement('div');
+      div.className = 'finding bg-white rounded-xl border border-[#1F2937]/10 p-5 part-card ' + s.box;
+      div.innerHTML =
+        '<div class="flex items-center gap-3 mb-2 flex-wrap">' +
+          '<span class="text-[11px] font-bold tracking-widest rounded px-2 py-0.5 ' + s.pill + '">' + s.label + '</span>' +
+          '<span class="font-bold">' + escapeHtml(f.title) + '</span>' +
+        '</div>' +
+        '<p class="text-sm text-[#1F2937]/70 mb-2">' + escapeHtml(f.detail) + '</p>' +
+        '<p class="text-sm"><span class="font-bold text-[#E11D48]">Fix: </span>' + escapeHtml(f.fix) + '</p>';
+      list.appendChild(div);
+    });
+  }
+
+  function fmtTs(sec) {
+    if (typeof sec !== 'number') return '—';
+    var d = new Date(sec * 1000);
+    return d.toLocaleString() + ' UTC'.replace('UTC', '');
+  }
+
+  function renderExpiry(payload) {
+    var sec = $('expirySection');
+    var exp = (payload && typeof payload.exp === 'number') ? payload.exp : null;
+    var iat = (payload && typeof payload.iat === 'number') ? payload.iat : null;
+    if (exp === null) { sec.classList.add('hidden'); currentExpSec = null; return; }
+    sec.classList.remove('hidden');
+    currentExpSec = exp;
+    $('tlIat').textContent = 'issued: ' + (iat ? new Date(iat * 1000).toLocaleString() : '—');
+    $('tlExp').textContent = 'expires: ' + new Date(exp * 1000).toLocaleString();
+    var nowMs = Date.now(), nowS = nowMs / 1000;
+    if (iat && exp > iat) {
+      var pct = Math.min(100, Math.max(0, ((nowS - iat) / (exp - iat)) * 100));
+      $('tlFill').style.width = pct + '%';
+      $('tlNow').style.left = 'calc(' + pct + '% - 3px)';
+      $('expiryNote').textContent = 'Token lifetime: ' + Math.round((exp - iat) / 60) + ' minutes from issue to expiry.';
+    } else {
+      $('tlFill').style.width = '100%';
+      $('tlNow').style.left = 'calc(100% - 3px)';
+      $('expiryNote').textContent = 'No iat claim found, so the timeline shows expiry relative to now.';
+    }
+    tickCountdown();
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(tickCountdown, 1000);
+  }
+  function tickCountdown() {
+    if (currentExpSec === null) return;
+    var c = formatCountdown(currentExpSec, Date.now());
+    var el = $('countdownLive');
+    el.textContent = c.text;
+    el.className = 'tick font-mono text-4xl sm:text-6xl font-bold ' + (c.expired ? 'text-[#1F2937]/40' : (c.hasExpiry && (c.days === 0 && c.hours === 0 && c.minutes < 5) ? 'text-amber-600' : 'text-[#E11D48]'));
+    $('countdownSub').textContent = c.expired
+      ? 'This token has expired — a server will reject it.'
+      : (c.hasExpiry ? 'remaining until expiry · exp = ' + new Date(currentExpSec * 1000).toISOString() : '');
+  }
+
+  function decode() {
+    showError(''); showNotice('');
+    var raw = tokenInput.value;
+    if (!raw.trim()) { showError('Paste a JWT first — the box is empty. Try the "Try a sample token" button to see how it works.'); return; }
+    var ext = extractToken(raw);
+    if (!ext.token) { showError('No JWT found. Paste a token shaped like header.payload.signature (three base64url parts separated by dots).'); return; }
+    if (ext.method !== 'plain') showNotice('✓ ' + ext.note + ' — decoded automatically.');
+    var parsed = parseJwt(ext.token);
+    if (!parsed.ok) {
+      var why = { 'structure': 'A JWT needs 2–3 dot-separated segments.', 'header-decode': 'The header segment is not valid base64url.', 'payload-decode': 'The payload segment is not valid base64url.', 'header-json': 'The header does not contain valid JSON.', 'payload-json': 'The payload does not contain valid JSON.', 'empty': 'The token is empty.' }[parsed.error] || 'The token is malformed.';
+      showError('Could not decode this token: ' + why + ' Double-check the paste — truncation is the usual culprit.');
+      return;
+    }
+    renderTeardown(parsed);
+    renderAudit(auditToken(parsed, Date.now()));
+    renderExpiry(parsed.payload);
+    $('compareSection').classList.remove('hidden');
+    $('teardown').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    pushHistory(ext.token);
+  }
+
+  function renderTeardown(parsed) {
+    $('teardown').classList.remove('hidden');
+    var segs = parsed.segments;
+    var total = segs.join('.').length || 1;
+    var colors = ['#1F2937', '#E11D48', '#9CA3AF'];
+    var labels = ['HEADER', 'PAYLOAD', 'SIGNATURE'];
+    var strip = $('tokenStrip'); strip.innerHTML = '';
+    segs.forEach(function (s, i) {
+      var d = document.createElement('div');
+      d.className = 'seg h-full flex items-center justify-center font-bold truncate px-1';
+      d.style.background = colors[i] || '#9CA3AF';
+      d.style.flexGrow = Math.max(1, Math.round((s.length / total) * 100));
+      d.style.flexBasis = '0';
+      d.textContent = labels[i] || '';
+      d.title = (labels[i] || 'part') + ' — ' + s.length + ' chars';
+      strip.appendChild(d);
+    });
+    $('hdrBytes').textContent = segs[0].length + ' chars';
+    $('plBytes').textContent = segs[1].length + ' chars';
+    $('sigBytes').textContent = (segs[2] || '').length + ' chars';
+    $('hdrJson').innerHTML = highlightJson(prettyPrint(parsed.header));
+    $('plJson').innerHTML = highlightJson(prettyPrint(parsed.payload));
+    var sig = parsed.signature;
+    $('sigValue').textContent = sig ? (sig.length > 220 ? sig.slice(0, 220) + '…' : sig) : '(empty)';
+    $('sigNote').textContent = sig
+      ? 'Verifies the token was issued by someone holding the key. Verification must happen on your server — never paste the secret here.'
+      : (String(parsed.alg).toLowerCase() === 'none'
+        ? 'Empty because alg is "none" — this token is unsigned and forgeable.'
+        : 'The signature segment is missing — there is nothing to verify against.');
+    $('auditSection').classList.remove('hidden');
+  }
+
+  function compare() {
+    var rawA = tokenInput.value, rawB = $('tokenInputB').value;
+    var a = parseJwt((extractToken(rawA).token) || '');
+    var b = parseJwt((extractToken(rawB).token) || '');
+    var res = compareTokens(a, b, Date.now());
+    var out = $('compareOut'); out.classList.remove('hidden');
+    var rows = $('compareRows'); rows.innerHTML = '';
+    res.rows.forEach(function (r) {
+      var tr = document.createElement('tr');
+      tr.className = 'border-b border-[#1F2937]/5 ' + (r.match ? '' : 'bg-rose-50/50');
+      tr.innerHTML = '<td class="py-2 pr-4 font-bold">' + escapeHtml(r.claim) + '</td>' +
+        '<td class="py-2 pr-4 break-all">' + escapeHtml(r.a.length > 60 ? r.a.slice(0, 60) + '…' : r.a) + '</td>' +
+        '<td class="py-2 pr-4 break-all">' + escapeHtml(r.b.length > 60 ? r.b.slice(0, 60) + '…' : r.b) + '</td>' +
+        '<td class="py-2">' + (r.match ? '<span class="text-emerald-600 font-bold">✓</span>' : '<span class="text-[#E11D48] font-bold">✗</span>') + '</td>';
+      rows.appendChild(tr);
+    });
+    var notes = $('compareNotes'); notes.innerHTML = '';
+    res.notes.forEach(function (n) {
+      var p = document.createElement('p');
+      p.className = 'bg-[#FAFAF7] border border-[#1F2937]/10 rounded-lg px-4 py-2.5';
+      p.textContent = '→ ' + n;
+      notes.appendChild(p);
+    });
+  }
+
+  decodeBtn.addEventListener('click', decode);
+  sampleBtn.addEventListener('click', function () { tokenInput.value = makeSampleToken(); decode(); });
+  clearBtn.addEventListener('click', function () {
+    tokenInput.value = ''; showError(''); showNotice('');
+    ['teardown', 'auditSection', 'expirySection', 'compareSection'].forEach(function (id) { $(id).classList.add('hidden'); });
+    if (countdownTimer) { clearInterval(countdownTimer); countdownTimer = null; }
+    currentExpSec = null;
+  });
+  $('compareBtn').addEventListener('click', compare);
+  tokenInput.addEventListener('keydown', function (e) {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') decode();
+  });
+  tokenInput.addEventListener('paste', function () {
+    setTimeout(function () {
+      var ext = extractToken(tokenInput.value);
+      if (ext.token && ext.method !== 'plain') showNotice('✓ ' + ext.note + ' — press "Decode & Audit" to inspect it.');
+    }, 0);
+  });
+
+  renderHistory();
+})();
+</script>
+</body>
+</html>
